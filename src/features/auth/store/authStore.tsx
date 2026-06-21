@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
+import { supabase } from '@/shared/services/supabaseClient'
 
 interface User {
   id: string
@@ -51,64 +52,182 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error: null,
   })
 
+  // Check session on mount
   useEffect(() => {
-    // Check localStorage for demo purposes
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser)
-        dispatch({ type: 'AUTH_SUCCESS', payload: user })
-      } catch {
-        dispatch({ type: 'LOGOUT' })
+    checkSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+
+          if (userData) {
+            dispatch({
+              type: 'AUTH_SUCCESS',
+              payload: {
+                id: userData.id,
+                email: userData.email,
+                name: userData.name,
+              },
+            })
+          }
+        } else {
+          dispatch({ type: 'LOGOUT' })
+        }
       }
-    } else {
-      dispatch({ type: 'LOGOUT' })
-    }
+    )
+
+    return () => subscription?.unsubscribe()
   }, [])
 
-  const login = async (email: string, password: string) => {
-    dispatch({ type: 'AUTH_START' })
+  const checkSession = async () => {
     try {
-      // TODO: Call actual auth service when Supabase is configured
-      const user: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        if (userData) {
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: {
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+            },
+          })
+        }
+      } else {
+        dispatch({ type: 'LOGOUT' })
       }
-      localStorage.setItem('user', JSON.stringify(user))
-      dispatch({ type: 'AUTH_SUCCESS', payload: user })
     } catch (error) {
-      dispatch({
-        type: 'AUTH_ERROR',
-        payload: error instanceof Error ? error.message : 'Login failed',
-      })
-      throw error
+      console.error('Session check failed:', error)
+      dispatch({ type: 'LOGOUT' })
     }
   }
 
   const signup = async (email: string, password: string, name: string) => {
+  dispatch({ type: 'AUTH_START' })
+  try {
+    console.log('1️⃣ Starting signup for:', email, name)
+
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+      },
+    })
+
+    console.log('2️⃣ Signup response:', { data, signupError })
+
+    if (signupError) {
+      console.log('3️⃣ Signup error:', signupError.message)
+      throw signupError
+    }
+
+    if (!data.user) {
+      console.log('4️⃣ No user ID')
+      throw new Error('No user ID')
+    }
+
+    console.log('5️⃣ User created with ID:', data.user.id)
+
+    // Wait for trigger
+    console.log('6️⃣ Waiting for trigger...')
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    console.log('7️⃣ Querying users table...')
+    const { data: userData, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single()
+
+    console.log('8️⃣ Query result:', { userData, fetchError })
+
+    if (fetchError) {
+      console.log('9️⃣ Fetch error:', fetchError.message)
+      throw fetchError
+    }
+
+    if (!userData) {
+      console.log('🔟 No user data')
+      throw new Error('User not found')
+    }
+
+    console.log('✅ SUCCESS - User created:', userData)
+
+    dispatch({
+      type: 'AUTH_SUCCESS',
+      payload: {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+      },
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Sign up failed'
+    console.log('❌ FINAL ERROR:', message)
+    dispatch({ type: 'AUTH_ERROR', payload: message })
+    throw error
+  }
+}
+
+  const login = async (email: string, password: string) => {
     dispatch({ type: 'AUTH_START' })
     try {
-      // TODO: Call actual auth service when Supabase is configured
-      const user: User = {
-        id: '1',
+      console.log('🔑 Logging in:', email)
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        name,
-      }
-      localStorage.setItem('user', JSON.stringify(user))
-      dispatch({ type: 'AUTH_SUCCESS', payload: user })
-    } catch (error) {
-      dispatch({
-        type: 'AUTH_ERROR',
-        payload: error instanceof Error ? error.message : 'Sign up failed',
+        password,
       })
+
+      if (error) throw error
+      if (!data.user) throw new Error('Login failed')
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (!userData) throw new Error('User profile not found')
+
+      console.log('✅ Login successful')
+
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+        },
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Login failed'
+      console.error('❌ Login error:', message)
+      dispatch({ type: 'AUTH_ERROR', payload: message })
       throw error
     }
   }
 
   const logout = async () => {
-    localStorage.removeItem('user')
-    dispatch({ type: 'LOGOUT' })
+    try {
+      await supabase.auth.signOut()
+      dispatch({ type: 'LOGOUT' })
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   return (

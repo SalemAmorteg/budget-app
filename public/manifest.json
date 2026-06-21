@@ -1,0 +1,17 @@
+{
+  "name": "Budget Cycle",
+  "short_name": "Budget Cycle",
+  "description": "Take control of your finances",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon"
+    }
+  ]
+}

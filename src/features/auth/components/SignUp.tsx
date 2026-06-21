@@ -20,15 +20,23 @@ export default function SignUp() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      setError('')
-      await signup(formData.email, formData.password, formData.name)
-      navigate('/dashboard')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign up failed')
-    }
+  e.preventDefault()
+
+  if (!formData.name || !formData.email || !formData.password) {
+    setError('All fields are required')
+    return
   }
+
+  try {
+    console.log('Intentando signup...')
+    await signup(formData.email, formData.password, formData.name)
+    setTimeout(() => navigate('/dashboard'), 500)
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : 'Sign up failed'
+    console.error('ERROR CAPTURADO:', errMsg)
+    setError(errMsg)  // ← Esto DEBE mostrar el error en la UI
+  }
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center px-4">
@@ -89,6 +97,10 @@ export default function SignUp() {
             type="submit"
             disabled={loading}
             className="btn-primary w-full"
+            onClick={(e) => {
+              console.log('🔴 BUTTON CLICKED!')
+              handleSubmit(e as any)
+            }}
           >
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>
