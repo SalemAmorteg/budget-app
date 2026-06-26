@@ -1,7 +1,7 @@
 // features/cycle/hooks/useCycle.ts
 import { useState, useEffect } from 'react';
-import { CycleService } from '../services/cycleService';
-import type { Cycle, CycleWithBuckets } from '@shared/types';
+import { CycleService } from '@/features/cycle/services/cycleService';
+import type { Cycle, CycleWithBuckets } from '@/shared/types';
 
 export function useCycle(cycleId: string | undefined) {
   const [cycle, setCycle] = useState<CycleWithBuckets | null>(null);

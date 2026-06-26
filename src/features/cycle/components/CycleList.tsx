@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/shared/hooks/useAuth'
-import { CycleService, Cycle } from '@/shared/services/cycleService'
+import { CycleService, Cycle } from '@/features/cycle/services/cycleService'
 
 export default function CycleList() {
   const { user } = useAuth()

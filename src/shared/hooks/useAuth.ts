@@ -1,4 +1,4 @@
-import { useAuthContext } from '@features/auth/store/authStore'
+import { useAuthContext } from '@/features/auth/store/authStore'
 
 export function useAuth() {
   return useAuthContext()

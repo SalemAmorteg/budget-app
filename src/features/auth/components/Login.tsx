@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '@shared/hooks/useAuth'
+import { useAuth } from '@/shared/hooks/useAuth'
 
 export default function Login() {
     const navigate = useNavigate()
