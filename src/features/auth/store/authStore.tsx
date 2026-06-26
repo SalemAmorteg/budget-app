@@ -85,34 +85,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription?.unsubscribe()
   }, [])
 
-  const checkSession = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-
-        if (userData) {
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: {
-              id: userData.id,
-              email: userData.email,
-              name: userData.name,
-            },
-          })
-        }
-      } else {
-        dispatch({ type: 'LOGOUT' })
-      }
-    } catch (error) {
-      console.error('Session check failed:', error)
+const checkSession = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (session?.user) {
+      // Si hay sesión en auth, el usuario está logueado
+      // Usamos los datos de auth.users directamente
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.email || '',
+        },
+      })
+    } else {
       dispatch({ type: 'LOGOUT' })
     }
+  } catch (error) {
+    console.error('Session check failed:', error)
+    dispatch({ type: 'LOGOUT' })
   }
+}
 
   const signup = async (email: string, password: string, name: string) => {
   dispatch({ type: 'AUTH_START' })
