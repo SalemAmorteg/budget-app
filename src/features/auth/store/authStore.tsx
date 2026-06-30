@@ -48,7 +48,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
-    loading: true,
+    loading: false,
     error: null,
   })
 
@@ -90,8 +90,6 @@ const checkSession = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     
     if (session?.user) {
-      // Si hay sesión en auth, el usuario está logueado
-      // Usamos los datos de auth.users directamente
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
@@ -101,6 +99,7 @@ const checkSession = async () => {
         },
       })
     } else {
+      // ⭐ MUY IMPORTANTE: Despachar LOGOUT para que loading sea false
       dispatch({ type: 'LOGOUT' })
     }
   } catch (error) {

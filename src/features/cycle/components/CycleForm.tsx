@@ -154,7 +154,7 @@ export default function CycleForm() {
     >
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+        <h1 style={{ color: '#000000' , fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
           Create New Income Cycle
         </h1>
         <p style={{ color: '#666' }}>
@@ -182,7 +182,7 @@ export default function CycleForm() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Cycle Name */}
         <div>
-          <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+          <label style={{ color: '#000000' , display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
             Cycle Name
             <span style={{ color: '#dc2626' }}>*</span>
           </label>
@@ -196,7 +196,7 @@ export default function CycleForm() {
             disabled={loading}
             maxLength={50}
             style={{
-              borderColor: errors.name ? '#dc2626' : undefined,
+              color: '#000000' , borderColor: errors.name ? '#dc2626' : undefined,
             }}
           />
           {errors.name && (
@@ -213,7 +213,7 @@ export default function CycleForm() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           {/* Start Date */}
           <div>
-            <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+            <label style={{ color: '#000000' , display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
               Start Date
               <span style={{ color: '#dc2626' }}>*</span>
             </label>
@@ -225,7 +225,7 @@ export default function CycleForm() {
               className="form-input"
               disabled={loading}
               style={{
-                borderColor: errors.startDate ? '#dc2626' : undefined,
+                color: '#000000' , borderColor: errors.startDate ? '#dc2626' : undefined,
               }}
             />
             {errors.startDate && (
@@ -237,7 +237,7 @@ export default function CycleForm() {
 
           {/* End Date */}
           <div>
-            <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+            <label style={{ color: '#000000' , display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
               End Date
               <span style={{ color: '#dc2626' }}>*</span>
             </label>
@@ -249,7 +249,7 @@ export default function CycleForm() {
               className="form-input"
               disabled={loading}
               style={{
-                borderColor: errors.endDate ? '#dc2626' : undefined,
+                color: '#000000' , borderColor: errors.endDate ? '#dc2626' : undefined,
               }}
             />
             {errors.endDate && (
@@ -264,7 +264,7 @@ export default function CycleForm() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           {/* Income */}
           <div>
-            <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+            <label style={{ color: '#000000' , display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
               Income Amount
               <span style={{ color: '#dc2626' }}>*</span>
             </label>
@@ -279,7 +279,7 @@ export default function CycleForm() {
               className="form-input"
               disabled={loading}
               style={{
-                borderColor: errors.income ? '#dc2626' : undefined,
+                color: '#000000' , borderColor: errors.income ? '#dc2626' : undefined,
               }}
             />
             {errors.income && (
@@ -291,7 +291,7 @@ export default function CycleForm() {
 
           {/* Currency */}
           <div>
-            <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+            <label style={{ color: '#000000' , display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
               Currency
               <span style={{ color: '#dc2626' }}>*</span>
             </label>
@@ -301,6 +301,7 @@ export default function CycleForm() {
               onChange={handleChange}
               className="form-input"
               disabled={loading}
+              style={{color: '#000000' , }}
             >
               <option value="COP">COP - Colombian Peso</option>
               <option value="USD">USD - US Dollar</option>

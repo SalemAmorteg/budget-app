@@ -1,13 +1,24 @@
-import { useParams, useLocation } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { CycleService, Cycle } from '@/features/cycle/services/cycleService'
+import { useBuckets } from '../hooks/useBuckets'
+import BucketList from './BucketList'
 
+/**
+ * DistributionPlanner
+ *
+ * Cambios en HU #2.4:
+ * - BucketList ahora usa Distribution Engine
+ * - Todos los cálculos son centralizados
+ * - La UI solo renderiza, no calcula
+ */
 export default function DistributionPlanner() {
   const { id } = useParams<{ id: string }>()
-  const location = useLocation()
   const [cycle, setCycle] = useState<Cycle | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [loadingCycle, setLoadingCycle] = useState(true)
+  const [cyclError, setCycleError] = useState('')
+
+  const { buckets, loading: loadingBuckets, error: bucketsError } = useBuckets(id)
 
   useEffect(() => {
     loadCycle()
@@ -17,48 +28,42 @@ export default function DistributionPlanner() {
     if (!id) return
 
     try {
-      setLoading(true)
+      setLoadingCycle(true)
       const data = await CycleService.getCycleById(id)
       setCycle(data)
       console.log('✅ Cycle loaded:', data)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load cycle'
-      setError(message)
+      setCycleError(message)
       console.error('❌ Error:', message)
     } finally {
-      setLoading(false)
+      setLoadingCycle(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Loading cycle...</p>
-      </div>
-    )
+  if (loadingCycle) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading cycle...</div>
   }
 
-  if (error) {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <p style={{ color: 'red' }}>Error: {error}</p>
-      </div>
-    )
+  if (cyclError) {
+    return <div style={{ padding: '2rem' }}>Error: {cyclError}</div>
   }
 
   if (!cycle) {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <p>Cycle not found</p>
-      </div>
-    )
+    return <div style={{ padding: '2rem' }}>Cycle not found</div>
   }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1>Distribution Planner</h1>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>
+          Distribution Planner
+        </h1>
+        <p style={{ color: '#666', margin: 0 }}>
+          Organize how your income will be distributed across different purposes
+        </p>
+      </div>
 
-      {/* Cycle Summary */}
       <div
         style={{
           backgroundColor: '#f9f9f9',
@@ -68,45 +73,75 @@ export default function DistributionPlanner() {
           border: '1px solid #ddd',
         }}
       >
-        <h2>{cycle.name}</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
           <div>
-            <p style={{ color: '#666', fontSize: '0.875rem' }}>Income</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-              {cycle.currency} {cycle.income.toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <p style={{ color: '#666', fontSize: '0.875rem' }}>Period</p>
-            <p style={{ fontSize: '1rem' }}>
+            <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>{cycle.name}</h2>
+            <p style={{ color: '#666', margin: 0, fontSize: '0.875rem' }}>
               {new Date(cycle.start_date).toLocaleDateString()} - {new Date(cycle.end_date).toLocaleDateString()}
             </p>
           </div>
+          <div
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#dbeafe',
+              color: '#0369a1',
+              borderRadius: '6px',
+              fontWeight: '600',
+              fontSize: '0.875rem',
+            }}
+          >
+            🔵 {cycle.status}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
           <div>
-            <p style={{ color: '#666', fontSize: '0.875rem' }}>Status</p>
-            <p style={{ fontSize: '1rem', fontWeight: '600', color: '#059669' }}>
-              🔵 {cycle.status}
+            <p style={{ color: '#666', fontSize: '0.875rem', margin: '0 0 0.5rem 0' }}>Income Amount</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>
+              {cycle.currency} {cycle.income.toLocaleString()}
+            </p>
+          </div>
+
+          <div>
+            <p style={{ color: '#666', fontSize: '0.875rem', margin: '0 0 0.5rem 0' }}>Currency</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>{cycle.currency}</p>
+          </div>
+
+          <div>
+            <p style={{ color: '#666', fontSize: '0.875rem', margin: '0 0 0.5rem 0' }}>Cycle Days</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>
+              {Math.floor(
+                (new Date(cycle.end_date).getTime() - new Date(cycle.start_date).getTime()) / (1000 * 60 * 60 * 24)
+              )}{' '}
+              days
             </p>
           </div>
         </div>
       </div>
 
-      {/* Placeholder */}
+      {/* BucketList usa Distribution Engine internamente */}
+      <BucketList
+        buckets={buckets}
+        currency={cycle.currency}
+        income={cycle.income}
+        loading={loadingBuckets}
+        error={bucketsError}
+      />
+
       <div
         style={{
-          backgroundColor: '#eff6ff',
-          border: '2px dashed #0284c7',
-          padding: '3rem',
-          borderRadius: '8px',
-          textAlign: 'center',
+          marginTop: '2rem',
+          padding: '1rem',
+          backgroundColor: '#f0f9ff',
+          border: '1px solid #bfdbfe',
+          borderRadius: '6px',
+          color: '#0369a1',
+          fontSize: '0.875rem',
         }}
       >
-        <h3 style={{ color: '#0284c7', marginBottom: '1rem' }}>📊 Distribution Planner</h3>
-        <p style={{ color: '#0369a1', marginBottom: '1rem' }}>
-          This is where you'll allocate your income across different buckets.
-        </p>
-        <p style={{ color: '#0369a1', fontSize: '0.875rem' }}>
-          Feature implementation coming in the next sprint ✨
+        <p style={{ margin: 0 }}>
+          <strong>💡 Distribution Engine:</strong> All calculations are performed centrally. The engine handles all financial
+          logic for distribution, budget advisor, and future features.
         </p>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { supabase } from '@/shared/services/supabaseClient'
+import { BucketService } from '@/shared/services/bucketService'
 
 // ========== TYPES ==========
 export interface Cycle {
@@ -37,59 +38,71 @@ export class CycleService {
    * - Retorna el ciclo creado
    */
   static async createCycle(
-    userId: string,
-    input: CreateCycleInput
-  ): Promise<Cycle> {
-    // 1. Validar que el usuario no tenga otro ciclo activo
-    const { data: activeCycle, error: activeError } = await supabase
-      .from('cycles')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('status', 'ACTIVE')
-      .single()
+  userId: string,
+  input: CreateCycleInput
+): Promise<Cycle> {
+  // 1. Validar que el usuario no tenga otro ciclo activo
+  const { data: activeCycle, error: activeError } = await supabase
+    .from('cycles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'ACTIVE')
+    .single()
 
-    // Si hay error pero NO es "no rows", es un error real
-    if (activeError && activeError.code !== 'PGRST116') {
-      throw new Error(`Failed to check active cycles: ${activeError.message}`)
-    }
-
-    // Si ya existe un ciclo activo, marcarlo como COMPLETED
-    if (activeCycle) {
-      await supabase
-        .from('cycles')
-        .update({ status: 'COMPLETED' })
-        .eq('id', activeCycle.id)
-    }
-
-    // 2. Crear el nuevo ciclo
-    const { data, error } = await supabase
-      .from('cycles')
-      .insert([
-        {
-          user_id: userId,
-          name: input.name,
-          start_date: input.startDate,
-          end_date: input.endDate,
-          income: input.income,
-          currency: input.currency,
-          status: 'ACTIVE',
-        },
-      ])
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Supabase error:', error)
-      throw new Error(`Failed to create cycle: ${error.message}`)
-    }
-
-    if (!data) {
-      throw new Error('No data returned from cycle creation')
-    }
-
-    console.log('✅ Cycle created successfully:', data)
-    return this.mapCycleFromDB(data)
+  // Si hay error pero NO es "no rows", es un error real
+  if (activeError && activeError.code !== 'PGRST116') {
+    throw new Error(`Failed to check active cycles: ${activeError.message}`)
   }
+
+  // Si ya existe un ciclo activo, marcarlo como COMPLETED
+  if (activeCycle) {
+    await supabase
+      .from('cycles')
+      .update({ status: 'COMPLETED' })
+      .eq('id', activeCycle.id)
+  }
+
+  // 2. Crear el nuevo ciclo
+  const { data, error } = await supabase
+    .from('cycles')
+    .insert([
+      {
+        user_id: userId,
+        name: input.name,
+        start_date: input.startDate,
+        end_date: input.endDate,
+        income: input.income,
+        currency: input.currency,
+        status: 'ACTIVE',
+      },
+    ])
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Supabase error:', error)
+    throw new Error(`Failed to create cycle: ${error.message}`)
+  }
+
+  if (!data) {
+    throw new Error('No data returned from cycle creation')
+  }
+
+  const cycle = this.mapCycleFromDB(data)
+  console.log('✅ Cycle created successfully:', cycle)
+
+  // 3. ⭐ CREAR BUCKETS POR DEFECTO AUTOMÁTICAMENTE
+  try {
+    const buckets = await BucketService.createDefaultBuckets(cycle.id)
+    console.log(`✅ Created ${buckets.length} default buckets for cycle`)
+  } catch (bucketError) {
+    console.error('⚠️ Warning: Failed to create default buckets:', bucketError)
+    // No lanzar error aquí, el ciclo ya fue creado
+    // Los buckets se pueden crear después
+  }
+
+  return cycle
+}
 
   /**
    * Obtener todos los ciclos del usuario
